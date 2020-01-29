@@ -11,9 +11,9 @@ int get_size(char value[16]) {
 	return 0;
 }
 
-int KEYWORD_COUNT = 5;
-char *keywords[5] = {
-	"main", "int", "char", "return", "func"
+int KEYWORD_COUNT = 10;
+char *keywords[10] = {
+	"main", "int", "char", "return", "func", "if","for","else","printf","scanf"
 };
 
 int is_keyword(char value[16]) {
@@ -61,15 +61,33 @@ ste_t find_or_insert_st(char lexeme[16], char type[16], int size, int scope, cha
 	return entry;
 }
 
+void modify(char lexeme[16], char arg[16]){
+		printf("%s %s\n", lexeme,arg);
+	int x;
+
+	for (int i = 0; i < ste_p; ++i)
+	{
+		if (strcmp(symbol_table[i].lexeme, lexeme) == 0)
+		{
+			x=i;
+			strcpy(symbol_table[x].arg,arg);
+			symbol_table[x].noarg = 1;
+		}
+	}
+
+}
+
 void print_symbol_table() {
 	printf("\n");
 	printf("-----------    SYMBOL  TABLE    ----------\n");
 	//printf("------------------------------------------\n");
 	printf("id |            name | type | size | scope|arguments|No. of arg|returntype\n");
 	//printf("------------------------------------------\n");
+	int x=1;
 	for (int i = 0; i < ste_p; ++i) {
 		ste_t entry = symbol_table[i];
-		printf("%2d | %15s | %4s | %4d | %5d| %5s   |    %2d    |%4s \n", entry.id, entry.lexeme, entry.type, entry.size, entry.scope,entry.arg,entry.noarg,entry.returntype);
+		if(!strcmp(entry.type,"int")||!strcmp(entry.type,"char")||!strcmp(entry.type,"Func"))
+		printf("%2d | %15s | %4s | %4d | %5d| %5s   |    %2d    |%4s \n", x++, entry.lexeme, entry.type, entry.size, entry.scope,entry.arg,entry.noarg,entry.returntype);
 	}
 	//printf("------------------------------------------\n");
 }
@@ -110,15 +128,29 @@ token_t new_token(token_type type, char value[16]) {
 	}
 	else if (type == TOKEN_TYPE_FUN) {
 		
-			token.entry = find_or_insert_st(value, "Func", 0, current_scope,"x",1,last_keyword.value);
+			//chart buff[128];
+			//findargs(buff)
+			token.entry = find_or_insert_st(value, "Func", 0, current_scope,"x",0,last_keyword.value);
 			
 		
 	}
+
 	strcpy(token.value, value);
 	if (token.type == TOKEN_TYPE_KEYWORD) {
 		last_keyword = token;
 	}
+	//printf("%s",tokens[(token_p)-1].value);
+	if (!strcmp(value,")")&&!strcmp(tokens[(token_p)-1].value,"(")){
+		//printf("jhakkas\n");
+		
+	}
+	else if(!strcmp(value,")"))
+		{
+			//printf("jhakkas2\n");
+			modify(tokens[token_p-4].value,tokens[token_p-1].value);
+		}
 	tokens[token_p++] = token;
+
 	return token;
 }
 
@@ -169,7 +201,7 @@ int isSpecialSymbol (char ch) {
 	return (strchr(SPECIALSYMBOLS, ch) != NULL);
 }
 
-const char *OPERATORS = "+-*/%<>=!&|^~";
+const char *OPERATORS = "+++-*/%<>=!&|^~";
 
 int isOperator (char ch) {
 	return (strchr(OPERATORS, ch) != NULL);
@@ -210,7 +242,7 @@ void emit_tokens (char *infile) {
 			
 			
 			buffer[k++] = '\0';
-			if (ch=='('){
+			if (ch=='('&&!is_keyword(buffer)){
 
 				
 				
