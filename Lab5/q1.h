@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define BUFFER_SIZE 512
 
-
+char *inname;
+int ki=0;
 int get_size(char value[16]) {
 	if (strcmp(value, "int") == 0)
 		return 4;
@@ -11,8 +13,8 @@ int get_size(char value[16]) {
 	return 0;
 }
 
-int KEYWORD_COUNT = 10;
-char *keywords[10] = {
+int KEYWORD_COUNT = 11;
+char *keywords[11] = {
 
 	"class", "main", "int", "char", "return", "func", "if","for","else","printf","scanf"
 };
@@ -157,15 +159,28 @@ token_t new_token(token_type type, char value[16]) {
 
 void print_token(token_t token) {
 	printf("<");
+	inname[ki++]='<';
 	if (token.type == TOKEN_TYPE_ID) {
 		ste_t entry = find_or_insert_st(token.value, last_keyword.value, get_size(last_keyword.value), current_scope,"x",0,last_keyword.value);
 		printf("id, %d", entry.id);
+		inname[ki++]='i';
+		inname[ki++]='d';
 	} else if (token.type == TOKEN_TYPE_NUM) {
 		printf("num, %s", token.value);
+		inname[ki++]='n';
+		inname[ki++]='u';
+		inname[ki++]='m';
+		
 	} else {
 		printf("%s", token.value);
-	}
+		for (int i = 0; i < strlen(token.value); ++i)
+		{
+			inname[ki++]=token.value[i];
+	}}
 	printf("> ");
+	inname[ki++]='>';
+	inname[ki++]=' ';
+
 }
 
 void print_tokens() {
@@ -208,11 +223,11 @@ int isOperator (char ch) {
 	return (strchr(OPERATORS, ch) != NULL);
 }
 
-#define BUFFER_SIZE 128
+//#define BUFFER_SIZE 128
 
 void emit_tokens (char *infile) {
 	int isFunct = 0;
-	
+	inname = (char *)malloc(BUFFER_SIZE*sizeof(char));
 	FILE *input = fopen(infile, "r");
 
 	char buffer[16];
@@ -299,7 +314,7 @@ void emit_tokens (char *infile) {
 
 	} while (ch != EOF);
 
-	print_symbol_table();
+	//print_symbol_table();
 	print_tokens();
 	
 
@@ -308,7 +323,7 @@ void emit_tokens (char *infile) {
 }
 
 
-int main(int argc, const char *argv[]) {
-	emit_tokens("input.c");
-	return 0;
-}
+// int main(int argc, const char *argv[]) {
+// 	emit_tokens("input.c");
+// 	return 0;
+// }

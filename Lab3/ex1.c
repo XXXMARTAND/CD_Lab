@@ -14,7 +14,7 @@ int get_size(char value[16]) {
 int KEYWORD_COUNT = 10;
 char *keywords[10] = {
 
-	"class", "main", "int", "char", "return", "func", "if","for","else","printf","scanf"
+	"class", "main", "int", "char", "return", "func", "if","for","else","printf"
 };
 
 int is_keyword(char value[16]) {
@@ -82,13 +82,13 @@ void print_symbol_table() {
 	printf("\n");
 	printf("-----------    SYMBOL  TABLE    ----------\n");
 	//printf("------------------------------------------\n");
-	printf("id |            name | type | size | scope|arguments|No. of arg|returntype\n");
+	printf("id |            name | type | arguments|returntype\n");
 	//printf("------------------------------------------\n");
 	int x=1;
 	for (int i = 0; i < ste_p; ++i) {
 		ste_t entry = symbol_table[i];
 		if(!strcmp(entry.type,"int")||!strcmp(entry.type,"char")||!strcmp(entry.type,"Func"))
-		printf("%2d | %15s | %4s | %4d | %5d| %5s   |    %2d    |%4s \n", x++, entry.lexeme, entry.type, entry.size, entry.scope,entry.arg,entry.noarg,entry.returntype);
+		printf("%2d | %15s | %4s |  %5s    |%4s \n", x++, entry.lexeme, entry.type,entry.arg,entry.returntype);
 	}
 	//printf("------------------------------------------\n");
 }
@@ -123,7 +123,7 @@ token_t new_token(token_type type, char value[16]) {
 		if (is_keyword(value)) {
 			token.type = TOKEN_TYPE_KEYWORD;
 		} else {
-			token.entry = find_or_insert_st(value, last_keyword.value, get_size(last_keyword.value), current_scope,"x",0,"");
+			token.entry = find_or_insert_st(value, last_keyword.value, get_size(last_keyword.value), current_scope," ",0,"");
 			
 		}
 	}
@@ -131,7 +131,7 @@ token_t new_token(token_type type, char value[16]) {
 		
 			//chart buff[128];
 			//findargs(buff)
-			token.entry = find_or_insert_st(value, "Func", 0, current_scope,"x",0,last_keyword.value);
+			token.entry = find_or_insert_st(value, "Func", 0, current_scope," ",0,last_keyword.value);
 			
 		
 	}
@@ -148,7 +148,7 @@ token_t new_token(token_type type, char value[16]) {
 	else if(!strcmp(value,")"))
 		{
 			//printf("jhakkas2\n");
-			modify(tokens[token_p-4].value,tokens[token_p-1].value);
+			modify(tokens[token_p-5].value,tokens[token_p-3].value);
 		}
 	tokens[token_p++] = token;
 
@@ -158,7 +158,7 @@ token_t new_token(token_type type, char value[16]) {
 void print_token(token_t token) {
 	printf("<");
 	if (token.type == TOKEN_TYPE_ID) {
-		ste_t entry = find_or_insert_st(token.value, last_keyword.value, get_size(last_keyword.value), current_scope,"x",0,last_keyword.value);
+		ste_t entry = find_or_insert_st(token.value, last_keyword.value, get_size(last_keyword.value), current_scope," ",0,last_keyword.value);
 		printf("id, %d", entry.id);
 	} else if (token.type == TOKEN_TYPE_NUM) {
 		printf("num, %s", token.value);
@@ -210,7 +210,7 @@ int isOperator (char ch) {
 
 #define BUFFER_SIZE 128
 
-void emit_tokens (char *infile) {
+void getnextToken (char *infile) {
 	int isFunct = 0;
 	
 	FILE *input = fopen(infile, "r");
@@ -309,6 +309,45 @@ void emit_tokens (char *infile) {
 
 
 int main(int argc, const char *argv[]) {
-	emit_tokens("input.c");
+
+	FILE *fa, *fb;
+	int ca, cb;
+	fa = fopen("x1.c","r");
+	if(fa == NULL){
+		printf("Cannot open file \n");
+		exit(0);
+	}
+	fb = fopen("q1out.c","w");
+	ca = getc(fa);
+	while(ca!= EOF){
+		if(ca=='-'){
+			cb = getc(fa);
+			if (cb=='-')
+			{
+				while(ca!='\n')
+					ca = getc(fa);
+
+			}
+			else if (cb =='*')
+			{
+				do{
+					while(ca!='*')
+						ca = getc(fa);
+					ca = getc(fa);
+
+				}while(ca!='/');
+		}
+		else{
+			putc(ca,fb);
+			putc(cb,fb);
+		}
+	}
+	else putc(ca,fb);
+	ca = getc(fa);
+}
+fclose(fa);
+fclose(fb);
+
+	getnextToken("q1out.c");
 	return 0;
 }

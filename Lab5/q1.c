@@ -1,533 +1,314 @@
-//
-// parserfour.c
-//
-// Simple parser for the grammar given
-//
-// Created by @avikantz on 02/22/17
-//
-
-// The grammer:
-
-/*
-	program -> main () { declarations statement_list }
-	declarations -> data-type identifier_list; declarations | e
-	data_type -> int | char
-	identifier_list -> id | id , identifier_list | id[number], identifier_list | id[number]
-	statement_list -> statement statement_list | e
-	statement -> assign_stat; | decision_stat | looping_stat
-	assign_stat -> id = expn;
-	expn -> simple_expn eprime
-	eprime -> relop simple_expn | e
-	simple_expn -> term seprime
-	seprime -> addop term seprime | e
-	term -> factor tprime
-	tprime -> mulop factor tprime | e
-	factor -> id | num
-	decision_stat -> if (expn) { statement_list } dprime
-	looping_stat -> while (expn) {statement_list} | for (assign_stat; expn; assign_stat) {statement_list}
-	dprime -> else { statement_list } | e
-	relop -> == | != | <= | >= | > | <
-	addop -> + | -
-	mulop -> * | / | %
-*/
-
-// Sample input:
-
-/*
-	main () {
-		int a;
-		int arr[10];
-		char b, c;
-		a = a + 10;
-		b = a * c;
-	}
-*/
-
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <stddef.h>
-#include <ctype.h>
 #include <string.h>
 
-#define BUFFER_SIZE 512
 
-#define SUCCESS_HANDLER printf("%s(): Success.\n", __PRETTY_FUNCTION__); exit(0);
-#define ERROR_HANDLER printf("%s(): Error occured.\n", __PRETTY_FUNCTION__); exit(1);
+int get_size(char value[16]) {
+	if (strcmp(value, "int") == 0)
+		return 4;
+	else if (strcmp(value, "char") == 0)
+		return 1;
+	return 0;
+}
 
-#define LOG_CURRENT printf("--> %s: %s\n", __PRETTY_FUNCTION__, input[i]);
+int KEYWORD_COUNT = 10;
+char *keywords[10] = {
 
-#define IF_CURR_EQ(name) if (strcmp(CURR, name) == 0)
-#define CURR_EQ(name) (strcmp(CURR, name) == 0)
+	"class", "main", "int", "char", "return", "func", "if","for","else","printf","scanf"
+};
 
-#define CURR input[i]
+int is_keyword(char value[16]) {
+	for (int i = 0; i < KEYWORD_COUNT; ++i) {
+		if (strcmp(value, keywords[i]) == 0)
+			return 1;
+	}
+	return 0;
+}
 
-const char delimiters[] = " ";
 
-char buffer[BUFFER_SIZE];
-char input[BUFFER_SIZE][BUFFER_SIZE];	// Input array?
-int k = 0;	// Total no of tokens
-int i = 0; 	// Current token read...
 
-// -------------------------
+typedef struct stex {
+	int id;
+	char lexeme[16];
+	char type[16];
+	int size;
+	int scope;
+	char arg[16];
+	int noarg;
+	char returntype[16];
+} ste_t;
 
-void program();
-void declarations();
-void data_type();
-void identifier_list();
-void statement_list();
-void statement();
-void assign_stat();
-void assign_stat_loop();
-void expn();
-void eprime();
-void simple_expn();
-void seprime();
-void term();
-void tprime();
-void factor();
-void decision_stat();
-void dprime();
-void looping_stat();
-void relop();
-void addop();
-void mulop();
+ste_t symbol_table[16];
+int ste_p = 0;
 
-// -------------------------
+ste_t find_or_insert_st(char lexeme[16], char type[16], int size, int scope, char arg[16], int noarg, char returntype[16]) {
+	ste_t entry;
+	// Check if the symbol table entry is present
+	int i;
+	for (i = 0; i < ste_p; ++i) {
+		if (strcmp(symbol_table[i].lexeme, lexeme) == 0) {
+			return symbol_table[i];
+		}
+	}
+	strcpy(entry.lexeme, lexeme);
+	entry.id = ste_p + 1;
+	strcpy(entry.type, type);
+	entry.size = size;
+	entry.scope = scope;
+	strcpy(entry.arg,arg);
+	strcpy(entry.returntype,returntype);
+	entry.noarg = noarg;
+	symbol_table[ste_p++] = entry;
+	return entry;
+}
 
-void program() {
-	LOG_CURRENT;
-	IF_CURR_EQ("<main>") {
-		i += 1;
-		LOG_CURRENT;
-		IF_CURR_EQ("<(>") {
-			i += 1;
-			LOG_CURRENT;
-			IF_CURR_EQ("<)>") {
-				i += 1;
-				LOG_CURRENT;
-				IF_CURR_EQ("<{>") {
-					i += 1;
-					LOG_CURRENT;
-					declarations();
-					statement_list();
-					IF_CURR_EQ("<}>") {
-						i += 1;
-						LOG_CURRENT;
-						if (i == k-1) {
-							SUCCESS_HANDLER;
-						}
-					} else {
-						ERROR_HANDLER;
-					}
-				} else {
-					ERROR_HANDLER;
-				}
-			} else {
-				ERROR_HANDLER;
-			}
+void modify(char lexeme[16], char arg[16]){
+		printf("%s %s\n", lexeme,arg);
+	int x;
+
+	for (int i = 0; i < ste_p; ++i)
+	{
+		if (strcmp(symbol_table[i].lexeme, lexeme) == 0)
+		{
+			x=i;
+			strcpy(symbol_table[x].arg,arg);
+			symbol_table[x].noarg = 1;
+		}
+	}
+
+}
+
+void print_symbol_table() {
+	printf("\n");
+	printf("-----------    SYMBOL  TABLE    ----------\n");
+	//printf("------------------------------------------\n");
+	printf("id |            name | type | size | scope|arguments|No. of arg|returntype\n");
+	//printf("------------------------------------------\n");
+	int x=1;
+	for (int i = 0; i < ste_p; ++i) {
+		ste_t entry = symbol_table[i];
+		if(!strcmp(entry.type,"int")||!strcmp(entry.type,"char")||!strcmp(entry.type,"Func"))
+		printf("%2d | %15s | %4s | %4d | %5d| %5s   |    %2d    |%4s \n", x++, entry.lexeme, entry.type, entry.size, entry.scope,entry.arg,entry.noarg,entry.returntype);
+	}
+	//printf("------------------------------------------\n");
+}
+
+
+typedef enum ttx {
+	TOKEN_TYPE_ID,
+	TOKEN_TYPE_KEYWORD,
+	TOKEN_TYPE_NUM,
+	TOKEN_TYPE_OP,
+	TOKEN_TYPE_SPECIAL,
+	TOKEN_TYPE_FUN
+} token_type;
+
+typedef struct tokenx {
+	token_type type;
+	char value[16];
+	ste_t entry;
+} token_t;
+
+token_t tokens[120];
+int token_p = 0;
+
+token_t last_keyword;
+int current_scope = 0;
+
+token_t new_token(token_type type, char value[16]) {
+	//printf("%s\n",last_keyword.value );
+	token_t token;
+	token.type = type;
+	if (type == TOKEN_TYPE_ID) {
+		if (is_keyword(value)) {
+			token.type = TOKEN_TYPE_KEYWORD;
 		} else {
-			ERROR_HANDLER;
-		}
-	} else {
-		ERROR_HANDLER;
-	}
-}
-
-void declarations() {
-	LOG_CURRENT;
-	if (CURR_EQ("<int>") || CURR_EQ("<char>")) {
-		data_type();
-		identifier_list();
-		IF_CURR_EQ("<;>") {
-			i += 1;
-			LOG_CURRENT;
-			declarations();
-		} else {
-			ERROR_HANDLER;
+			token.entry = find_or_insert_st(value, last_keyword.value, get_size(last_keyword.value), current_scope,"x",0,"");
+			
 		}
 	}
-}
-
-void data_type() {
-	LOG_CURRENT;
-	if (CURR_EQ("<int>") || CURR_EQ("<char>")) {
-		i += 1;
-		LOG_CURRENT;
-	} else {
-		ERROR_HANDLER;
+	else if (type == TOKEN_TYPE_FUN) {
+		
+			//chart buff[128];
+			//findargs(buff)
+			token.entry = find_or_insert_st(value, "Func", 0, current_scope,"x",0,last_keyword.value);
+			
+		
 	}
-}
 
-void identifier_list() {
-	LOG_CURRENT;
-	IF_CURR_EQ("<id>") {
-		i += 1;
-		LOG_CURRENT;
-		IF_CURR_EQ("<,>") {
-			i += 1;
-			identifier_list();
-		} else IF_CURR_EQ("<[>") {
-			i += 1;
-			LOG_CURRENT;
-			IF_CURR_EQ("<num>") {
-				i += 1;
-				LOG_CURRENT;
-	 			IF_CURR_EQ("<]>") {
-	 				i += 1;
-	 				LOG_CURRENT;
-					IF_CURR_EQ("<,>") {
-						i += 1;
-						identifier_list();
-					} else {
-						return;
-					}
-				} else {
-					ERROR_HANDLER;
-				}
-			} else {
-				ERROR_HANDLER;
-			}
+	strcpy(token.value, value);
+	if (token.type == TOKEN_TYPE_KEYWORD) {
+		last_keyword = token;
+	}
+	//printf("%s",tokens[(token_p)-1].value);
+	if (!strcmp(value,")")&&!strcmp(tokens[(token_p)-1].value,"(")){
+		//printf("jhakkas\n");
+		
+	}
+	else if(!strcmp(value,")"))
+		{
+			//printf("jhakkas2\n");
+			modify(tokens[token_p-4].value,tokens[token_p-1].value);
 		}
-	}
+	tokens[token_p++] = token;
+
+	return token;
 }
 
-void statement_list() {
-	LOG_CURRENT;
-	statement();
-	IF_CURR_EQ("<id>") {
-		statement_list();
-	}
-}
-
-void statement() {
-	LOG_CURRENT;
-	IF_CURR_EQ("<id>") {
-		assign_stat();
-	}
-	IF_CURR_EQ("<if>") {
-		decision_stat();
-	}
-	if (CURR_EQ("<while>") || CURR_EQ("<for>")) {
-		looping_stat();
-	}
-}
-
-void assign_stat() {
-	LOG_CURRENT;
-	IF_CURR_EQ("<id>") {
-		i += 1;
-		LOG_CURRENT;
-		IF_CURR_EQ("<=>") {
-			i += 1;
-			LOG_CURRENT;
-			expn();
-			LOG_CURRENT;
-			IF_CURR_EQ("<;>") {
-				i += 1;
-				LOG_CURRENT;
-				return;
-			}
-		} else {
-			ERROR_HANDLER;
-		}
-	}
-}
-
-void assign_stat_loop() {
-	LOG_CURRENT;
-	IF_CURR_EQ("<id>") {
-		i += 1;
-		LOG_CURRENT;
-		IF_CURR_EQ("<=>") {
-			i += 1;
-			LOG_CURRENT;
-			expn();
-		} else {
-			ERROR_HANDLER;
-		}
-	}
-}
-
-void expn() {
-	LOG_CURRENT;
-	if (CURR_EQ("<id>") || CURR_EQ("<num>")) {
-		simple_expn();
-		eprime();
+void print_token(token_t token) {
+	printf("<");
+	if (token.type == TOKEN_TYPE_ID) {
+		ste_t entry = find_or_insert_st(token.value, last_keyword.value, get_size(last_keyword.value), current_scope,"x",0,last_keyword.value);
+		printf("id, %d", entry.id);
+	} else if (token.type == TOKEN_TYPE_NUM) {
+		printf("num, %s", token.value);
 	} else {
-		ERROR_HANDLER;
+		printf("%s", token.value);
 	}
+	printf("> ");
 }
 
-void eprime() {
-	LOG_CURRENT;
-	if (CURR_EQ("<==>") || CURR_EQ("<!=>") || CURR_EQ("<<=>") || CURR_EQ("<>=>") || CURR_EQ("<<>") || CURR_EQ("<>>")) {
-		relop();
-		simple_expn();
+void print_tokens() {
+	printf("\n");
+	printf("--------------    TOKENS    --------------\n");
+	for (int i = 0; i < token_p; ++i) {
+		print_token(tokens[i]);
+		if (i % 5 == 4)
+			printf("\n");
 	}
+	printf("\n------------------------------------------\n");
 }
 
-void simple_expn() {
-	LOG_CURRENT;
-	if (CURR_EQ("<id>") || CURR_EQ("<num>")) {
-		term();
-		seprime();
-	}
+
+int isDigit (char ch) {
+	return (ch >= '0' && ch <= '9');
 }
 
-void seprime() {
-	LOG_CURRENT;
-	if (CURR_EQ("<+>") || CURR_EQ("<->")) {
-		addop();
-		term();
-		seprime();
-	}
+int isNumerical (char ch) {
+	return (isDigit(ch) || ch == '.' || ch == 'e' || ch == 'E');
 }
 
-void term() {
-	LOG_CURRENT;
-	if (CURR_EQ("<id>") || CURR_EQ("<num>")) {
-		factor();
-		tprime();
-	} else {
-		ERROR_HANDLER;
-	}
+int isAlphabet (char ch) {
+	return ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'));
 }
 
-void tprime() {
-	LOG_CURRENT;
-	if (CURR_EQ("<*>") || CURR_EQ("</>") || CURR_EQ("<%>")) {
-		mulop();
-		factor();
-		tprime();
-	}
+int isValidID (char ch) {
+	return (isDigit(ch) || isAlphabet(ch) || ch == '_');
 }
 
-void factor() {
-	LOG_CURRENT;
-	if (CURR_EQ("<id>") || CURR_EQ("<num>")) {
-		i += 1;
-		LOG_CURRENT;
-	} else {
-		ERROR_HANDLER;
-	}
+const char *SPECIALSYMBOLS = "[]{}(),;:.#";
+
+int isSpecialSymbol (char ch) {
+	return (strchr(SPECIALSYMBOLS, ch) != NULL);
 }
 
-void decision_stat() {
-	LOG_CURRENT;
-	IF_CURR_EQ("<if>") {
-		i += 1;
-		LOG_CURRENT;
-		IF_CURR_EQ("<(>") {
-			i += 1;
-			LOG_CURRENT;
-			expn();
-			IF_CURR_EQ("<)>") {
-				i += 1;
-				LOG_CURRENT;
-				IF_CURR_EQ("<{>") {
-					i += 1;
-					LOG_CURRENT;
-					statement_list();
-					IF_CURR_EQ("<}>") {
-						i += 1;
-						LOG_CURRENT;
-						dprime();
-					} else {
-						ERROR_HANDLER;
-					}
-				} else {
-					ERROR_HANDLER;
-				}
-			} else {
-				ERROR_HANDLER;
-			}
-		} else {
-			ERROR_HANDLER;
-		}
-	} else {
-		ERROR_HANDLER;
-	}
+const char *OPERATORS = "+++-*/%<>=!&|^~";
+
+int isOperator (char ch) {
+	return (strchr(OPERATORS, ch) != NULL);
 }
 
-void dprime() {
-	LOG_CURRENT;
-	IF_CURR_EQ("<else>") {
-		i += 1;
-		LOG_CURRENT;
-		IF_CURR_EQ("<{>") {
-			i += 1;
-			LOG_CURRENT;
-			statement_list();
-			IF_CURR_EQ("<}>") {
-				i += 1;
-				LOG_CURRENT;
-			} else {
-				LOG_CURRENT;
-			}
-		} else {
-			ERROR_HANDLER;
-		}
-	}
-}
+#define BUFFER_SIZE 128
 
-void looping_stat() {
-	LOG_CURRENT;
-	IF_CURR_EQ("<while>") {
-		i += 1;
-		LOG_CURRENT;
-		IF_CURR_EQ("<(>") {
-			i += 1;
-			LOG_CURRENT;
-			expn();
-			IF_CURR_EQ("<)>") {
-				i += 1;
-				LOG_CURRENT;
-				IF_CURR_EQ("<{>") {
-					i += 1;
-					LOG_CURRENT;
-					statement_list();
-					IF_CURR_EQ("<}>") {
-						i += 1;
-						LOG_CURRENT;
-					} else {
-						ERROR_HANDLER;
-					}
-				} else {
-					ERROR_HANDLER;
-				}
-			} else {
-				ERROR_HANDLER;
-			}
-		} else {
-			ERROR_HANDLER;
-		}
-	} else IF_CURR_EQ("<for>") {
-		i += 1;
-		LOG_CURRENT;
-		IF_CURR_EQ("<(>") {
-			i += 1;
-			LOG_CURRENT;
-			assign_stat_loop();
-			IF_CURR_EQ("<;>") {
-				i += 1;
-				LOG_CURRENT;
-				expn();
-				IF_CURR_EQ("<;>") {
-					i += 1;
-					LOG_CURRENT;
-					assign_stat_loop();
-					IF_CURR_EQ("<)>") {
-						i += 1;
-						LOG_CURRENT;
-						IF_CURR_EQ("<{>") {
-							i += 1;
-							LOG_CURRENT;
-							statement_list();
-							IF_CURR_EQ("<}>") {
-								i += 1;
-								LOG_CURRENT;
-							} else {
-								ERROR_HANDLER;
-							}
-						} else {
-							ERROR_HANDLER;
-						}
-					} else {
-						ERROR_HANDLER;
-					}
-				} else {
-					ERROR_HANDLER;
-				}
-			} else {
-				ERROR_HANDLER;
-			}
-		} else {
-			ERROR_HANDLER;
-		}
-	} else {
-		ERROR_HANDLER;
-	}
-}
+void emit_tokens (char *infile) {
+	int isFunct = 0;
+	
+	FILE *input = fopen(infile, "r");
 
-void relop() {
-	LOG_CURRENT;
-	if (CURR_EQ("<==>") || CURR_EQ("<!=>") || CURR_EQ("<<=>") || CURR_EQ("<>=>") || CURR_EQ("<<>") || CURR_EQ("<>>")) {
-		i += 1;
-		LOG_CURRENT;
-	} else {
-		ERROR_HANDLER;
-	}
-}
-
-void addop() {
-	LOG_CURRENT;
-	if (CURR_EQ("<+>") || CURR_EQ("<->")) {
-		i += 1;
-		LOG_CURRENT;
-	} else {
-		ERROR_HANDLER;
-	}
-}
-
-void mulop() {
-	LOG_CURRENT;
-	if (CURR_EQ("<*>") || CURR_EQ("</>") || CURR_EQ("<%>")) {
-		i += 1;
-		LOG_CURRENT;
-	} else {
-		ERROR_HANDLER;
-	}
-}
-
-// ----------------------------
-
-void parse_input (char *inname) {
-
-	strcpy(buffer, inname);
-
-	// Make a temp copy of the string
-	char *cp = (char *)malloc(BUFFER_SIZE * sizeof(char));
-	strcpy(cp, buffer);
-
-	char *token = (char *)malloc(256 * sizeof(char));
-
-	do {
-		// strsep - extract token from string, returns null if token is not found.
-		token = strsep(&cp, delimiters);
-		if (token != NULL && strlen(token) > 0) {
-			strcpy(input[k++], token);
-			// printf("%s || ", input[k-1]);
-		}
-
-	} while (token != NULL);
-	strcpy(input[k], "$");
-
-	program();
-
-}
-
-int main (int argc, char const *argv[]) {
-
-	char *inname = (char *)malloc(BUFFER_SIZE * sizeof(char));
+	char buffer[16];
 	int k = 0;
 
-	// File from the output of the lexer
+	current_scope = 0;
+	char ch, lch;
 
-	FILE *infile = fopen("out.txt", "r");
-	char ch;
+	token_t token;
 
 	do {
-		ch = getc(infile);
-		if (ch == '\n' || ch == '\t')
-			inname[k++] = ' ';
-		else
-			inname[k++] = ch;
+
+		ch = getc(input);
+
+		if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
+			// Discard space
+		}
+
+		// IDs begin with an alphabet and then may contains numbers, characters or '_'
+		else if (isAlphabet(ch)) {
+			k = 0;
+			while (isValidID(ch)) {
+				buffer[k++] = ch;
+				ch = getc(input);
+			}
+			//char x = getc(input);
+			
+			
+			
+			buffer[k++] = '\0';
+			if (ch=='('&&!is_keyword(buffer)){
+
+				
+				
+				token = new_token(TOKEN_TYPE_FUN, buffer);
+
+			}
+			else
+				token = new_token(TOKEN_TYPE_ID, buffer);
+			//ungetc(x,input);
+			ungetc(ch, input);
+			printf("%s\n",buffer );
+			
+		}
+
+		// Numbers
+		else if (isDigit(ch)) {
+			k = 0;
+			while (isNumerical(ch)) {
+				buffer[k++] = ch;
+				ch = getc(input);
+			}
+			ungetc(ch, input);
+			buffer[k++] = '\0';
+			token = new_token(TOKEN_TYPE_NUM, buffer);
+		}
+
+		else if (isSpecialSymbol(ch)) {
+			if (ch == '{') {
+				current_scope += 1;
+			} else if (ch == '}') {
+				current_scope -= 1;
+			}
+			k = 0;
+			buffer[k++] = ch;
+			buffer[k++] = '\0';
+			token = new_token(TOKEN_TYPE_SPECIAL, buffer);
+		}
+
+		else if (isOperator(ch)) {
+			k = 0;
+			while (isOperator(ch) || ch == ' ' || ch == '\t') {
+				if (isOperator(ch)) {
+					buffer[k++] = ch;
+				}
+				ch = getc(input);
+			}
+			buffer[k++] = '\0';
+			ungetc(ch, input);
+			token = new_token(TOKEN_TYPE_OP, buffer);
+		}
+
+		lch = ch;
+
 	} while (ch != EOF);
 
-	printf("%s\n", inname);
+	print_symbol_table();
+	print_tokens();
+	
 
-	parse_input(inname);
+	// program();
 
+}
+
+
+int main(int argc, const char *argv[]) {
+	emit_tokens("input.c");
 	return 0;
 }

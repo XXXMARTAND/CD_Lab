@@ -1,18 +1,21 @@
 %{
-	int chars = 0;
-	int words = 0;
-	int lines = 0;
+	int lett = 0;
+	int vow = 0;
+	
 %}
 
 %%
-[a-zA-Z]+ { words++;chars+=strlen(yytext);}
-\n {chars++;lines++;}
-. {chars++;}
+[aeiouAEIOU] {vow++;}
+
+[a-zA-Z] {lett++;}
 %%
-main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
 	yylex();
-	printf("%8d%8d%8d\n",lines,words,chars);
+	printf("%8d%8d\n",vow,lett);
+	printf("%d \n",argc);
+
+	printf("%s\n",argv[2]);
 
 }
 int yywrap() {
