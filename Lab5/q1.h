@@ -224,53 +224,53 @@ int isOperator (char ch) {
 }
 
 //#define BUFFER_SIZE 128
-void clean_comm (char *infile){
-	FILE *fa, *fb;
-	int ca, cb;
-	fa = fopen(infile,"r");
-	if(fa == NULL){
-		printf("Cannot open file \n");
-		exit(0);
-	}
-	fb = fopen("qout.c","w");
-	ca = getc(fa);
-	while(ca!= EOF){
-		if(ca=='/'){
-			cb = getc(fa);
-			if (cb=='/')
-			{
-				while(ca!='\n')
-					ca = getc(fa);
+// void clean_comm (char *infile){
+// 	FILE *fa, *fb;
+// 	int ca, cb;
+// 	fa = fopen(infile,"r");
+// 	if(fa == NULL){
+// 		printf("Cannot open file \n");
+// 		exit(0);
+// 	}
+// 	fb = fopen("qout.c","w");
+// 	ca = getc(fa);
+// 	while(ca!= EOF){
+// 		if(ca=='/'){
+// 			cb = getc(fa);
+// 			if (cb=='/')
+// 			{
+// 				while(ca!='\n')
+// 					ca = getc(fa);
 
-			}
-			else if (cb =='*')
-			{
-				do{
-					while(ca!='*')
-						ca = getc(fa);
-					ca = getc(fa);
+// 			}
+// 			else if (cb =='*')
+// 			{
+// 				do{
+// 					while(ca!='*')
+// 						ca = getc(fa);
+// 					ca = getc(fa);
 
-				}while(ca!='/');
-		}
+// 				}while(ca!='/');
+// 		}
 
 		
-		else{
-			putc(ca,fb);
-			putc(cb,fb);
-		}
-	}
-	else if (ca == '#') { 
-			while (ca != '\n') { 
-				ca = getc(fa);
-			}
-		}
-	else putc(ca,fb);
-	ca = getc(fa);
-}
-fclose(fa);
-fclose(fb);
+// 		else{
+// 			putc(ca,fb);
+// 			putc(cb,fb);
+// 		}
+// 	}
+// 	else if (ca == '#') { 
+// 			while (ca != '\n') { 
+// 				ca = getc(fa);
+// 			}
+// 		}
+// 	else putc(ca,fb);
+// 	ca = getc(fa);
+// }
+// fclose(fa);
+// fclose(fb);
 
-}
+// }
 
 
 void emit_tokens (char *infile) {
