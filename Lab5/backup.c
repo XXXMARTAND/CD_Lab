@@ -6,12 +6,13 @@
 #include <string.h>
 #include "q1.h"
 
+// #define BUFFER_SIZE 512
 
+#define SUCCESS_HANDLER printf("%s(): Success.\n", __PRETTY_FUNCTION__); exit(0);
+#define ERROR_HANDLER printf("%s(): Error occured.\n", __PRETTY_FUNCTION__); exit(1);
 
-#define SUCCESS_HANDLER printf("%s() Success\n", __PRETTY_FUNCTION__); exit(0);
-#define ERROR_HANDLER printf("%s() Error occured\n", __PRETTY_FUNCTION__); exit(1);
-
- #define LOG_CURRENT printf(" %s: %s\n", __PRETTY_FUNCTION__, input[i]);
+ #define LOG_CURRENT printf("--> %s: %s\n", __PRETTY_FUNCTION__, input[i]);
+//#define LOG_CURRENT printf("-->");
 
 #define IF_CURR_EQ(name) if (strcmp(CURR, name) == 0)
 #define CURR_EQ(name) (strcmp(CURR, name) == 0)
@@ -21,9 +22,9 @@
 const char delimiters[] = " ";
 
 char buffer[BUFFER_SIZE];
-char input[BUFFER_SIZE][BUFFER_SIZE];
-int k = 0;	// Total 
-int i = 0; 	// Current 
+char input[BUFFER_SIZE][BUFFER_SIZE];	// Input array?
+int k = 0;	// Total no of tokens
+int i = 0; 	// Current token read...
 
 // -------------------------
 
@@ -443,22 +444,26 @@ void mulop() {
 void parse_input (char *inname) {
 	
 	strcpy(buffer, inname);
-	
+	printf("%s\n", buffer);
+	// Make a temp copy of the string
 	char *cp = (char *)malloc(BUFFER_SIZE * sizeof(char));
 	strcpy(cp, buffer);
-	
+	printf("%s\n", cp);
 	char *token = (char *)malloc(256 * sizeof(char));
 
 	do {
+		// strsep - extract token from string, returns null if token is not found.
 		token = strsep(&cp, delimiters);
-
+		//printf("%s\n", token);
 		if (token != NULL && strlen(token) > 0) {
 			strcpy(input[k++], token);
-
+			//printf("%d%s\n",k,token );
+			//printf("%s || ", input[k-1]);
 		}
 
 	} while (token != NULL);
 	strcpy(input[k], "$");
+	//printf("%s || ", input[k]);
 	program();
 
 }
@@ -466,9 +471,29 @@ void parse_input (char *inname) {
 int main (int argc, char const *argv[]) {
 
 
+	// File from the output of the lexer
+
+
 	emit_tokens("input.c");
 
-	//printf("%s\n", inname);
+	// 	char *inname = (char *)malloc(BUFFER_SIZE * sizeof(char));
+	// int k = 0,i=0;
+
+
+	// FILE *infile = fopen("out.txt", "r");
+	// char ch;
+
+
+	// do {
+	// 	ch = getc(infile);
+	// 	if (ch == '\n' || ch == '\t')
+	// 		inname[k++] = ' ';
+	// 	else
+	// 		inname[k++] = ch;
+	// } while (ch != EOF);
+
+
+	printf("%s\n", inname);
 
 	parse_input(inname);
 

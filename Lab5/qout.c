@@ -1,8 +1,6 @@
-#include <iostream.h>
 main () {
 	int x;
-	//ssup
-	char y;
+		char y;
 	int p;
 	x = p;
 	x = p + x * p;
