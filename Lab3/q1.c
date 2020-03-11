@@ -14,7 +14,7 @@ int get_size(char value[16]) {
 int KEYWORD_COUNT = 10;
 char *keywords[10] = {
 
-	"class", "main", "int", "char", "return", "func", "if","for","else","printf","scanf"
+	"class", "main", "int", "char", "return", "func", "if","for","else","printf"
 };
 
 int is_keyword(char value[16]) {

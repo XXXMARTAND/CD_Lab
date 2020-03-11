@@ -8,10 +8,10 @@
 
 
 
-#define SUCCESS_HANDLER printf("%s() Success\n", __PRETTY_FUNCTION__); exit(0);
-#define ERROR_HANDLER printf("%s() Error occured\n", __PRETTY_FUNCTION__); exit(1);
+#define SUCCESS_HANDLER printf("%s() Success\n", __FUNCTION__); exit(0);
+#define ERROR_HANDLER printf("%s() Error occured at %d %d\n", __FUNCTION__,tokens[i].rowno,tokens[i].colno); exit(1);
 
- #define LOG_CURRENT printf(" %s: %s\n", __PRETTY_FUNCTION__, input[i]);
+ #define LOG_CURRENT printf(" %s: %s\n", __FUNCTION__, input[i]);
 
 #define IF_CURR_EQ(name) if (strcmp(CURR, name) == 0)
 #define CURR_EQ(name) (strcmp(CURR, name) == 0)
@@ -24,7 +24,7 @@ char buffer[BUFFER_SIZE];
 char input[BUFFER_SIZE][BUFFER_SIZE];
 int k = 0;	// Total 
 int i = 0; 	// Current 
-
+int count =0;
 // -------------------------
 
 void program();
@@ -70,7 +70,7 @@ void program() {
 					IF_CURR_EQ("<}>") {
 						i += 1;
 						LOG_CURRENT;
-						printf("%d,%d\n",i,k-1 );
+						//printf("%d,%d\n",i,k-1 );
 						if (i == k) {
 							SUCCESS_HANDLER;
 						}
@@ -454,6 +454,8 @@ void parse_input (char *inname) {
 
 		if (token != NULL && strlen(token) > 0) {
 			strcpy(input[k++], token);
+			count++;
+			//printf("%s\n",input[k-1] );
 
 		}
 

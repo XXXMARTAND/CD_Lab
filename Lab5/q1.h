@@ -65,7 +65,7 @@ ste_t find_or_insert_st(char lexeme[16], char type[16], int size, int scope, cha
 }
 
 void modify(char lexeme[16], char arg[16]){
-		printf("%s %s\n", lexeme,arg);
+		//printf("%s %s\n", lexeme,arg);
 	int x;
 
 	for (int i = 0; i < ste_p; ++i)
@@ -109,6 +109,8 @@ typedef struct tokenx {
 	token_type type;
 	char value[16];
 	ste_t entry;
+	int rowno;
+	int colno;
 } token_t;
 
 token_t tokens[120];
@@ -117,15 +119,22 @@ int token_p = 0;
 token_t last_keyword;
 int current_scope = 0;
 
-token_t new_token(token_type type, char value[16]) {
+token_t new_token(token_type type, char value[16], int rowno, int colno) {
 	//printf("%s\n",last_keyword.value );
+	//printf("%dyyyyy",colno );
 	token_t token;
 	token.type = type;
+	token.rowno = rowno;
+			token.colno = colno;
 	if (type == TOKEN_TYPE_ID) {
 		if (is_keyword(value)) {
 			token.type = TOKEN_TYPE_KEYWORD;
+			// token.rowno = rowno;
+			// token.colno = colno;
 		} else {
 			token.entry = find_or_insert_st(value, last_keyword.value, get_size(last_keyword.value), current_scope,"x",0,"");
+			// token.rowno = rowno;
+			// token.colno = colno;
 			
 		}
 	}
@@ -134,6 +143,8 @@ token_t new_token(token_type type, char value[16]) {
 			//chart buff[128];
 			//findargs(buff)
 			token.entry = find_or_insert_st(value, "Func", 0, current_scope,"x",0,last_keyword.value);
+			token.rowno = rowno;
+			token.colno = colno;
 			
 		
 	}
@@ -153,6 +164,8 @@ token_t new_token(token_type type, char value[16]) {
 			modify(tokens[token_p-4].value,tokens[token_p-1].value);
 		}
 	tokens[token_p++] = token;
+	
+	
 
 	return token;
 }
@@ -177,6 +190,8 @@ void print_token(token_t token) {
 		{
 			inname[ki++]=token.value[i];
 	}}
+	
+	printf(",%d,%d",token.rowno,token.colno);
 	printf("> ");
 	inname[ki++]='>';
 	inname[ki++]=' ';
@@ -224,60 +239,61 @@ int isOperator (char ch) {
 }
 
 //#define BUFFER_SIZE 128
-// void clean_comm (char *infile){
-// 	FILE *fa, *fb;
-// 	int ca, cb;
-// 	fa = fopen(infile,"r");
-// 	if(fa == NULL){
-// 		printf("Cannot open file \n");
-// 		exit(0);
-// 	}
-// 	fb = fopen("qout.c","w");
-// 	ca = getc(fa);
-// 	while(ca!= EOF){
-// 		if(ca=='/'){
-// 			cb = getc(fa);
-// 			if (cb=='/')
-// 			{
-// 				while(ca!='\n')
-// 					ca = getc(fa);
+void clean_comm (char *infile){
+	FILE *fa, *fb;
+	int ca, cb;
+	fa = fopen(infile,"r");
+	if(fa == NULL){
+		printf("Cannot open file \n");
+		exit(0);
+	}
+	fb = fopen("qout.c","w");
+	ca = getc(fa);
+	while(ca!= EOF){
+		if(ca=='/'){
+			cb = getc(fa);
+			if (cb=='/')
+			{
+				while(ca!='\n')
+					ca = getc(fa);
 
-// 			}
-// 			else if (cb =='*')
-// 			{
-// 				do{
-// 					while(ca!='*')
-// 						ca = getc(fa);
-// 					ca = getc(fa);
+			}
+			else if (cb =='*')
+			{
+				do{
+					while(ca!='*')
+						ca = getc(fa);
+					ca = getc(fa);
 
-// 				}while(ca!='/');
-// 		}
+				}while(ca!='/');
+		}
 
 		
-// 		else{
-// 			putc(ca,fb);
-// 			putc(cb,fb);
-// 		}
-// 	}
-// 	else if (ca == '#') { 
-// 			while (ca != '\n') { 
-// 				ca = getc(fa);
-// 			}
-// 		}
-// 	else putc(ca,fb);
-// 	ca = getc(fa);
-// }
-// fclose(fa);
-// fclose(fb);
+		else{
+			putc(ca,fb);
+			putc(cb,fb);
+		}
+	}
+	else if (ca == '#') { 
+			while (ca != '\n') { 
+				ca = getc(fa);
+			}
+		}
+	else putc(ca,fb);
+	ca = getc(fa);
+}
+fclose(fa);
+fclose(fb);
 
-// }
+}
 
 
 void emit_tokens (char *infile) {
+	int rowno=1,colno=0,tempcol=0;
 	int isFunct = 0;
 	clean_comm(infile);
 	inname = (char *)malloc(BUFFER_SIZE*sizeof(char));
-	FILE *input = fopen("qout.c", "r");
+	FILE *input = fopen(infile, "r");
 
 	char buffer[16];
 	int k = 0;
@@ -291,15 +307,63 @@ void emit_tokens (char *infile) {
 
 		ch = getc(input);
 
-		if (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') {
+		if (ch == ' ') {
 			// Discard space
+			colno++;
 		}
+		else if(ch == '\t'){
+			colno+=4;
+
+		}
+		else if(ch == '\n'){
+			colno=0;
+			rowno++;
+			
+		}
+		else if(ch == '\r'){
+			
+		}
+		else if (ch == '#') { 
+			colno=0;
+			rowno++;
+			while (ch != '\n') { 
+				ch = getc(input);
+			}
+		}
+		else if(ch=='/'){
+			ch = getc(input);
+			if (ch=='/')
+			{
+				colno=0;
+			rowno++;
+				while(ch!='\n')
+					ch = getc(input);
+
+			}
+			else if (ch =='*')
+			{	
+				colno=0;
+				rowno++;
+				do{
+					while(ch!='*'){
+						ch = getc(input);
+						if(ch=='\n')
+							rowno++;
+					}
+					ch = getc(input);
+
+				}while(ch!='/');
+		}	
+	}
 
 		// IDs begin with an alphabet and then may contains numbers, characters or '_'
 		else if (isAlphabet(ch)) {
 			k = 0;
+			tempcol=colno;
 			while (isValidID(ch)) {
 				buffer[k++] = ch;
+				colno++;
+				//printf("%d",colno );
 				ch = getc(input);
 			}
 			//char x = getc(input);
@@ -311,11 +375,11 @@ void emit_tokens (char *infile) {
 
 				
 				
-				token = new_token(TOKEN_TYPE_FUN, buffer);
+				token = new_token(TOKEN_TYPE_FUN, buffer,rowno,tempcol);
 
 			}
 			else
-				token = new_token(TOKEN_TYPE_ID, buffer);
+				token = new_token(TOKEN_TYPE_ID, buffer,rowno,tempcol);
 			//ungetc(x,input);
 			ungetc(ch, input);
 			//printf("%s\n",buffer );
@@ -325,16 +389,19 @@ void emit_tokens (char *infile) {
 		// Numbers
 		else if (isDigit(ch)) {
 			k = 0;
+			tempcol=colno;
 			while (isNumerical(ch)) {
 				buffer[k++] = ch;
+				colno++;
 				ch = getc(input);
 			}
 			ungetc(ch, input);
 			buffer[k++] = '\0';
-			token = new_token(TOKEN_TYPE_NUM, buffer);
+			token = new_token(TOKEN_TYPE_NUM, buffer,rowno,tempcol);
 		}
 
 		else if (isSpecialSymbol(ch)) {
+			tempcol=colno;
 			if (ch == '{') {
 				current_scope += 1;
 			} else if (ch == '}') {
@@ -342,21 +409,25 @@ void emit_tokens (char *infile) {
 			}
 			k = 0;
 			buffer[k++] = ch;
+			colno++;
 			buffer[k++] = '\0';
-			token = new_token(TOKEN_TYPE_SPECIAL, buffer);
+			token = new_token(TOKEN_TYPE_SPECIAL, buffer,rowno,colno);
+			
 		}
 
 		else if (isOperator(ch)) {
 			k = 0;
+			tempcol=colno;
 			while (isOperator(ch) || ch == ' ' || ch == '\t') {
 				if (isOperator(ch)) {
 					buffer[k++] = ch;
+					colno++;
 				}
 				ch = getc(input);
 			}
 			buffer[k++] = '\0';
 			ungetc(ch, input);
-			token = new_token(TOKEN_TYPE_OP, buffer);
+			token = new_token(TOKEN_TYPE_OP, buffer,rowno,tempcol);
 		}
 
 		lch = ch;
@@ -366,7 +437,6 @@ void emit_tokens (char *infile) {
 	//print_symbol_table();
 	print_tokens();
 	
-
 	//program();
 
 }
